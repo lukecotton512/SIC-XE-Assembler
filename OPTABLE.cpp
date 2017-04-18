@@ -10,6 +10,7 @@
 
 #define SPACE ' '
 
+// Constructs our OPTABLE.
 void constructOpTable() {
 	// Break the string up into each line.
 	std::string optableStr = OPTABLEStr;
