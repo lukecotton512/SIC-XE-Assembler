@@ -73,12 +73,10 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 			// Check for errors.
 			if (reg1Val == -1) {
 				std::cerr << "Error: Invalid register!" << std::endl;
-				exit(EXIT_FAILURE);
 				return nullptr;
 			}
 			if (reg2Val == -1) {
 				std::cerr << "Error: invalid register!" << std::endl;
-				exit(EXIT_FAILURE);
 				return nullptr;
 			}
 			
