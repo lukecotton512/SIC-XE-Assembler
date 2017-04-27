@@ -12,7 +12,7 @@
 #include <unistd.h>
 
 // Assemble function.
-char * assemble(std::string instrStr, int &byteCount, int locctr) {
+char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symTable) {
 	// Split into multiple parts.
 	std::istringstream sStream(instrStr);
 	std::string mmemonic;
@@ -99,12 +99,6 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				assembledInstr = entry->opcode;
 				assembledInstr << 24;
 				
-				// Now, set the control bits to their proper values.
-				// And then push them in.
-				uint32_t bitmask = 0x00000031;
-				bitmask << 18;
-				assembledInstr += bitmask;
-				
 				// Make sure we have a label.
 				if (sStream.eof()) {
 					std::cerr << "Error: no memory address for type 3/4 instruction." << std::endl;
@@ -115,12 +109,46 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				std::string memoryAddressStr;
 				std::getline(sStream, memoryAddressStr);
 				
+				// Our variables for immediate and relative addressing.
+				bool isRelative = true;
+				bool isImmediate = true;
+				
+				// Check the first character.
+				char firstChar = memoryAddressStr[0];
+				if (firstChar == '#') {
+					// Mark that this is immediate addressing and modify the appropriate variables.
+					isRelative = false;
+					// Erase the character from the string.
+					memoryAddressStr.erase(0,1);
+				} else if (firstChar == '@') {
+					// Mark that this is relative addressing and modify the appropriate variables.
+					isImmediate = false;
+					// Erase the character from the string.
+					memoryAddressStr.erase(0,1);
+				}
+				
+				// Now, set the control bits to their proper values.
+				// And then push them in.
+				uint32_t bitmask = 0x00000001;
+				// Relative addressing.
+				if (isRelative) {
+					// Add 2 to the bitmask.
+					bitmask += 0x20;
+				}
+				// Is immediate.
+				if (isImmediate) {
+					// Add 1 to the bitmask.
+					bitmask += 0x10;
+				}
+				bitmask << 18;
+				assembledInstr += bitmask;
+				
 				// Now, lookup the label.
-				SymTabEntry *symTabEntry = lookupEntryInSymTab(memoryAddressStr);
+				Symbol symTabEntry = symTable.getSymbol(memoryAddressStr);
 				// Get the address.
 				uint32_t memoryAddress;
 				if (symTabEntry != nullptr) {
-					memoryAddress = symTabEntry->memoryAddress;
+					memoryAddress = symTabEntry.getAddress();
 				} else {
 					// If null, then try to convert to memory address.
 					try {
@@ -150,9 +178,24 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				assembledInstr = entry->opcode;
 				assembledInstr << 16;
 				
+				// Make sure we have a label.
+				if (sStream.eof()) {
+					std::cerr << "Error: no memory address for type 3/4 instruction." << std::endl;
+					return nullptr;
+				}
+				
 				// Get our label.
 				std::string memoryAddressStr;
 				std::getline(sStream, memoryAddressStr);
+				
+				// Make sure we are not index addressed.
+				bool isIndexAddressed = false;
+				size_t pos = memoryAddressStr.find(",X");
+				if (pos != std::string::npos) {
+					// Set index addressing boolean, and erase last of characters.
+					bool isIndexAddressed = true;
+					memoryAddressStr.erase(pos);
+				}
 				
 				// Our variables for immediate and relative addressing.
 				bool isRelative = true;
@@ -174,11 +217,11 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				
 				// Lookup the symbol, and get the memory address.
 				// Now, lookup the label.
-				SymTabEntry *symTabEntry = lookupEntryInSymTab(memoryAddressStr);
+				Symbol symTabEntry = symTable.getSymbol(memoryAddressStr);
 				// Get the address.
 				uint32_t memoryAddress;
 				if (symTabEntry != nullptr) {
-					memoryAddress = symTabEntry->memoryAddress;
+					memoryAddress = symTabEntry.getAddress();
 				} else {
 					// If null, then try to convert to memory address.
 					try {
@@ -207,13 +250,18 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				uint32_t bitmask = 0x00000000;
 				// Relative addressing.
 				if (isRelative) {
-					// Add 1 to the bitmask.
-					bitmask += 0x10;
+					// Add 2 to the bitmask.
+					bitmask += 0x20;
 				}
 				// Is immediate.
 				if (isImmediate) {
-					// Add 2 to the bitmask.
-					bitmask += 0x20;
+					// Add 1 to the bitmask.
+					bitmask += 0x10;
+				}
+				// Is index addressed.
+				if (isIndexAddressed) {
+					// Add the index bit to the bitmask.
+					bitmask += 0x08;
 				}
 				// Make it PC relative.
 				bitmask += 0x2;

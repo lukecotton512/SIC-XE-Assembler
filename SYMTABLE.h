@@ -13,5 +13,5 @@
 
       void addSymbol(std::string label, int Address, int length); //allows you to insert a symbol into the vector
 
-      Symbol::Symbol getSymbol(String label); //allows you to retrieve a Symbol from the symbol table
+      Symbol getSymbol(std::string label); //allows you to retrieve a Symbol from the symbol table
  };

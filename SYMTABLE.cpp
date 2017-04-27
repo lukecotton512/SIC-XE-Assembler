@@ -14,7 +14,7 @@
     SYMTABLE::SymbolTable.push_back(newSymbol);//new symbol is inserted into the vector
  }
 
- Symbol::Symbol getSymbol(String label)
+Symbol getSymbol(std::string label)
  {
      for(int i = 0; i < SYMTABLE::SymbolTable.Size(); i++)
          {
