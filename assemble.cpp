@@ -97,7 +97,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				byteCount = 4;
 				// Plug opcode in and push over by 24 bytes.
 				assembledInstr = entry->opcode;
-				assembledInstr << 24;
+				assembledInstr = assembledInstr << 24;
 				
 				// Make sure we have a label.
 				if (sStream.eof()) {
@@ -140,15 +140,15 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 					// Add 1 to the bitmask.
 					bitmask += 0x10;
 				}
-				bitmask << 18;
+				bitmask = bitmask << 18;
 				assembledInstr += bitmask;
 				
 				// Now, lookup the label.
-				Symbol symTabEntry = symTable.getSymbol(memoryAddressStr);
+				Symbol * symTabEntry = symTable.getSymbol(memoryAddressStr);
 				// Get the address.
 				uint32_t memoryAddress;
 				if (symTabEntry != nullptr) {
-					memoryAddress = symTabEntry.getAddress();
+					memoryAddress = symTabEntry->getAddress();
 				} else {
 					// If null, then try to convert to memory address.
 					try {
@@ -176,7 +176,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				// Is immediate and is
 				// Plug opcode in and push over by 16 bytes.
 				assembledInstr = entry->opcode;
-				assembledInstr << 16;
+				assembledInstr = assembledInstr << 16;
 				
 				// Make sure we have a label.
 				if (sStream.eof()) {
@@ -217,11 +217,11 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				
 				// Lookup the symbol, and get the memory address.
 				// Now, lookup the label.
-				Symbol symTabEntry = symTable.getSymbol(memoryAddressStr);
+				Symbol * symTabEntry = symTable.getSymbol(memoryAddressStr);
 				// Get the address.
 				uint32_t memoryAddress;
 				if (symTabEntry != nullptr) {
-					memoryAddress = symTabEntry.getAddress();
+					memoryAddress = symTabEntry->getAddress();
 				} else {
 					// If null, then try to convert to memory address.
 					try {
@@ -266,12 +266,12 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				// Make it PC relative.
 				bitmask += 0x2;
 				// And then push them in.
-				bitmask << 10;
+				bitmask = bitmask << 10;
 				assembledInstr += bitmask;
 			}
 		}
 		// Copy into new buffer, while preserving byte order.
-		char * buffer = malloc(byteCount);
+		char * buffer = (char *)malloc(byteCount);
 		char * instrPoint = (char *)&assembledInstr;
 		for (int i = byteCount - 1; i < 0; i--) {
 			#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__

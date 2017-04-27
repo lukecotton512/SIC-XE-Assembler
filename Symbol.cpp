@@ -14,31 +14,31 @@
 
  std::string Symbol::getLabel()
  {
-   return Symbol::label;
+   return label;
  }
 
  void Symbol::setLabel(std::string Label)
  {
-  Symbol::label = Label;
+  label = Label;
  }
 
  int Symbol::getAddress()
  {
-  return Symbol::Address;
+  return Address;
  }
 
  void Symbol::setAddress(int address)
  {
-  Symbol::Address = address;
+  Address = address;
  }
 
  int Symbol::getLength()
  {
-  return Symbol::Length;
+  return Length;
  }
  void Symbol::setLength(int length)
  {
-  Symbol::Length = length;
+  Length = length;
  }
 
 
