@@ -23,5 +23,5 @@
                return SYMTABLE::SymbolTable.at(i);  //Searches the SYMTABLE for a matching label and if found it returns that symbol
              }
          }
-      return null;   //If no matching symbol is found in the SYMTABLE then a null value is returned
+      return nullptr;   //If no matching symbol is found in the SYMTABLE then a null value is returned
  }

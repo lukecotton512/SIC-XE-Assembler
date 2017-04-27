@@ -1,8 +1,8 @@
  #ifndef SYMBOL_H
  #define SYMBOL_H
 
- #include<string>
- #include<vector>
+ #include <string>
+ #include <vector>
 
  class Symbol {
   private:
@@ -27,5 +27,5 @@
     int getLength();
     void setLength(int length);
 
-	}
+	};
  #endif

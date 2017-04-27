@@ -124,7 +124,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				} else {
 					// If null, then try to convert to memory address.
 					try {
-						memoryAddress = stol(memoryAddressStr);
+						memoryAddress = stoi(memoryAddressStr, 0, 16);
 					} catch (std::exception except) {
 						// We have an error, so get out of here.
 						std::cerr << "Error: invalid token in label field." << std::endl;
@@ -154,16 +154,71 @@ char * assemble(std::string instrStr, int &byteCount, int locctr) {
 				std::string memoryAddressStr;
 				std::getline(sStream, memoryAddressStr);
 				
+				// Our variables for immediate and relative addressing.
+				bool isRelative = true;
+				bool isImmediate = true;
+				
 				// Check the first character.
 				char firstChar = memoryAddressStr[0];
 				if (firstChar == '#') {
-					
+					// Mark that this is immediate addressing and modify the appropriate variables.
+					isRelative = false;
+					// Erase the character from the string.
+					memoryAddressStr.erase(0,1);
+				} else if (firstChar == '@') {
+					// Mark that this is relative addressing and modify the appropriate variables.
+					isImmediate = false;
+					// Erase the character from the string.
+					memoryAddressStr.erase(0,1);
+				}
+				
+				// Lookup the symbol, and get the memory address.
+				// Now, lookup the label.
+				SymTabEntry *symTabEntry = lookupEntryInSymTab(memoryAddressStr);
+				// Get the address.
+				uint32_t memoryAddress;
+				if (symTabEntry != nullptr) {
+					memoryAddress = symTabEntry->memoryAddress;
+				} else {
+					// If null, then try to convert to memory address.
+					try {
+						memoryAddress = stoi(memoryAddressStr, 0, 16);
+					} catch (std::exception except) {
+						// We have an error, so get out of here.
+						std::cerr << "Error: invalid token in label field." << std::endl;
+						return nullptr;
+					}
+				}
+				
+				// Perform relative addressing using the locctr.
+				uint32_t relativeAddress = memoryAddress - locctr;
+				
+				// If the address is bigger than the allowed amount, then error out as well.
+				if (relativeAddress > 0xFFF) {
+					std::cerr << "Error: Invalid memory address." << std::endl;
+					return nullptr;
+				} else {
+					// Put the memory address in the instruction.
+					assembledInstr += relativeAddress;
 				}
 				
 				// Now, set the control bits to their proper values.
+				
+				uint32_t bitmask = 0x00000000;
+				// Relative addressing.
+				if (isRelative) {
+					// Add 1 to the bitmask.
+					bitmask += 0x10;
+				}
+				// Is immediate.
+				if (isImmediate) {
+					// Add 2 to the bitmask.
+					bitmask += 0x20;
+				}
+				// Make it PC relative.
+				bitmask += 0x2;
 				// And then push them in.
-				uint32_t bitmask = 0x00000030;
-				bitmask << 18;
+				bitmask << 10;
 				assembledInstr += bitmask;
 			}
 		}

@@ -1,20 +1,20 @@
  #include "Symbol.h"
- #include<string>
+ #include <string>
 
  Symbol::Symbol(std::string Label, int address, int length)
  {
-  Symbol::label = Label;
-  Symbol::Address = address;
-  Symbol::Length = length;
+  label = Label;
+  Address = address;
+  Length = length;
  }
  Symbol::~Symbol()
  {
-     this.delete;
+     
  }
 
  std::string Symbol::getLabel()
  {
-   return Symbol:label;
+   return Symbol::label;
  }
 
  void Symbol::setLabel(std::string Label)
