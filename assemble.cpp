@@ -193,7 +193,15 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 					// Set index addressing boolean, and erase last of characters.
 					bool isIndexAddressed = true;
 					memoryAddressStr.erase(pos);
-				}
+				} 
+				
+				// Try with space.
+				pos = memoryAddressStr.find(", X");
+				if (pos != std::string::npos) {
+					// Set index addressing boolean, and erase last of characters.
+					bool isIndexAddressed = true;
+					memoryAddressStr.erase(pos);
+				} 
 				
 				// Our variables for immediate and relative addressing.
 				bool isRelative = true;

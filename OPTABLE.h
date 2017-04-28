@@ -15,7 +15,7 @@ typedef struct OpTableEntry {
 } OpTableEntry;
 
 // Our OPTABLE.
-OpTableEntry OPTABLE[255];
+static OpTableEntry OPTABLE[255];
 
 // Function to construct optable. 
 // We need to run this before doing anything in the assembler.

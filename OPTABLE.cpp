@@ -15,9 +15,9 @@ void constructOpTable() {
 	// Break the string up into each line.
 	std::string optableStr = OPTABLEStr;
 	std::istringstream sStream (optableStr);
-	std::string inputStr;
 	while (!sStream.eof()) {
 		// Split into each instruction.
+		std::string inputStr;
 		std::getline(sStream, inputStr);
 		
 		// Split the instructions into 3 parts.
@@ -26,6 +26,11 @@ void constructOpTable() {
 		std::string formatstr;
 		std::string opcodestr;
 		std::getline(inputsStream, mmenonicstr, SPACE);
+		// If the mmemonicstr is empty, then get out of here.
+		if (mmenonicstr == "") {
+			break;
+		}
+		// Convert the rest.
 		std::getline(inputsStream, formatstr, SPACE);
 		std::getline(inputsStream, opcodestr, SPACE);
 		
