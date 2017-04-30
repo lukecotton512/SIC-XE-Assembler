@@ -1,5 +1,5 @@
 # SIC-XE Assembler
-Luke Cotton
+Luke Cotton, Mark Miller, Matthew Anders
 
 ## What is it?
 This assembler is for a theoretical computer architecture called the SIC-XE architecture. This architecture is a simplified computer architecture for learning systems programming. This program takes an assembly program for SIC-XE, and assembles it into an object program.
