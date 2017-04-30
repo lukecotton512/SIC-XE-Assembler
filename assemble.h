@@ -10,7 +10,7 @@
 #include "SYMTABLE.h"
 
 // Assemble function.
-char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symTable);
+uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symTable);
 
 // Convert register to number.
 int registerNum(std::string registerVal);

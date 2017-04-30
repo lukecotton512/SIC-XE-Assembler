@@ -37,7 +37,7 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 			
 			// Try to convert it.
 			try {
-				locctr = stoi(lineInString);
+				locctr = stoi(lineInString, nullptr, 16);
 			} catch (std::exception except) {
 				// Print an error and exit.
 				std::cerr << "Error: invalid token in START statement." << std::endl;
@@ -45,6 +45,8 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 			}
 			// We found it, so set startStatement to true.
 			startStatement = true;
+			// End the line in the output file.
+			outputStream << line << std::endl;
 			// Get out of here.
 			break;
 		}
@@ -53,6 +55,9 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 	// If there is not a start statement, then rewind the stream.
 	if (!startStatement) {
 		inputStream.seekg(0, std::ios_base::beg);
+		
+		// Also, proceed to write a generic start statement into the program.
+		outputStream << "PROGRAM START 0" << std::endl;
 	}
 	
 	// Loop through the input file and get each line.
@@ -69,12 +74,27 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 			}
 		}
 		
+		// Find any '\r' characters in the file and replace them with spaces.
+		for (int i = 0; i < line.size(); i++) {
+			if (line[i] == '\r') {
+				// Replace the character.
+				line[i] = ' ';
+			}
+		}
+		
 		// Strip any comments out of the line.
 		size_t posOfDot = line.find(".");
 		if (posOfDot != std::string::npos) {
 			// Get rid of the rest of the line.
 			line.erase(posOfDot, line.size() - posOfDot);
+			// If the last character is a space, then get rid of it.
+			if (line[line.size()-1] == ' ') {
+				line.erase(line.size() - 1, 1);
+			}
 		}
+		
+		// Make a copy of the line for later.
+		std::string lineCopy = line;
 		
 		// Split the stream by spaces using a string stream.
 		std::istringstream lineStream (line);
@@ -133,7 +153,7 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 						// Increment locctr.
 						locctr += val * 3;
 					} else if (lineInString == "RESB") {
-						// Get the number of items in the next string, and multiply by 3.
+						// Get the number of items in the next string, and add them in.
 						// Try to convert it.
 						int val = 0;
 						std::string valStr;
@@ -153,7 +173,7 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 						if (pos != std::string::npos) {
 							while (line[pos] == '\'') {
 								// If we are bigger than the size of the string, then return error.
-								if (pos <= line.size()) {
+								if (pos > line.size()) {
 									// Print error and return.
 									std::cerr << "Error: No closing for BYTE constant" << std::endl;
 									return false;
@@ -168,14 +188,23 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 						// If this is the first line, then we probably have a symbol.
 						// Get the symbol and enter it in.
 						symtable.addSymbol(lineInString, locctr, 1);
+						
+						// Also, remove it from the copy of the line.
+						size_t labelPos = lineCopy.find(lineInString);
+						lineCopy.erase(labelPos, lineInString.size());
 					}
 				}
 				// Increment counter.
 				i++;
 			}
 		}
+		// Get rid of any spaces at the start of the input line.
+		while (lineCopy[0] == ' ') {
+			// Delete the character.
+			lineCopy.erase(0,1);
+		}
 		// End the line in the output file.
-		outputStream << line << std::endl;
+		outputStream << lineCopy << std::endl;
 	}
 	
 	// Return success.

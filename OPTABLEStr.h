@@ -52,7 +52,7 @@ const char OPTABLEStr[] =
 "STF 3 80\n"
 "STI 3 D4\n"
 "STL 3 14\n"
-"STS 3 74\n"
+"STS 3 7C\n"
 "STSW 3 E8\n"
 "STT 3 84\n"
 "STX 3 10\n"

@@ -7,12 +7,16 @@
 #include "OPTABLE.h"
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <cstring>
 #include <unistd.h>
 
+// Macro for swapping byte order.
+#define BYTESWAP(x) ((x >> 24) & 0xFF) || ((x << 8) & 0xFF0000) || ((x >> 8) & 0xFF00) || ((x << 24) & 0xFF000000)
+
 // Assemble function.
-char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symTable) {
+uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symTable) {
 	// Split into multiple parts.
 	std::istringstream sStream(instrStr);
 	std::string mmemonic;
@@ -33,15 +37,15 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 	if (entry == nullptr) {
 		std::cerr << "Error: invalid instruction mmemonic." << std::endl;
 		exit(EXIT_FAILURE);
-		return nullptr;
+		return -1;
 	} else {
 		// Buffer for instruction.
-		uint32_t assembledInstr;
+		uint32_t assembledInstr = 0;
 		// We have something, so handle the instruction.
 		if (entry->format == 1) {
 			// Type 1 instruction.
 			// Set to opcode.
-			assembledInstr = entry->opcode;
+			assembledInstr += entry->opcode;
 			
 		} else if (entry->format == 2) {
 			// Type 2 instruction.
@@ -52,7 +56,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 			if (sStream.eof()) {
 				std::cerr << "Error: Invalid value!" << std::endl;
 				exit(EXIT_FAILURE);
-				return nullptr;
+				return -1;
 			}
 			
 			// Grab register 1.
@@ -73,15 +77,15 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 			// Check for errors.
 			if (reg1Val == -1) {
 				std::cerr << "Error: Invalid register!" << std::endl;
-				return nullptr;
+				return -1;
 			}
 			if (reg2Val == -1) {
 				std::cerr << "Error: invalid register!" << std::endl;
-				return nullptr;
+				return -1;
 			}
 			
 			// Put opcode in assembledInstr and shift by 8 bytes.
-			assembledInstr = entry->opcode;
+			assembledInstr += entry->opcode;
 			assembledInstr = assembledInstr << 8;
 			
 			// Put register value in.
@@ -94,13 +98,13 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				// Extended mode instruction.
 				byteCount = 4;
 				// Plug opcode in and push over by 24 bytes.
-				assembledInstr = entry->opcode;
+				assembledInstr += entry->opcode;
 				assembledInstr = assembledInstr << 24;
 				
 				// Make sure we have a label.
 				if (sStream.eof()) {
 					std::cerr << "Error: no memory address for type 3/4 instruction." << std::endl;
-					return nullptr;
+					return -1;
 				}
 				
 				// Get our label.
@@ -138,7 +142,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 					// Add 1 to the bitmask.
 					bitmask += 0x10;
 				}
-				bitmask = bitmask << 18;
+				bitmask = bitmask << 20;
 				assembledInstr += bitmask;
 				
 				// Now, lookup the label.
@@ -150,18 +154,22 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				} else {
 					// If null, then try to convert to memory address.
 					try {
+						int base = 16;
+						if (isImmediate) {
+							base = 10;
+						}
 						memoryAddress = stoi(memoryAddressStr, 0, 16);
 					} catch (std::exception except) {
 						// We have an error, so get out of here.
 						std::cerr << "Error: invalid token in label field." << std::endl;
-						return nullptr;
+						return -1;
 					}
 				}
 				
 				// If the address is bigger than the allowed amount, then error out as well.
 				if (memoryAddress > 0xFFFFF) {
 					std::cerr << "Error: Invalid memory address." << std::endl;
-					return nullptr;
+					return -1;
 				} else {
 					// Put the memory address in the instruction.
 					assembledInstr += memoryAddress;
@@ -173,13 +181,13 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				
 				// Is immediate and is
 				// Plug opcode in and push over by 16 bytes.
-				assembledInstr = entry->opcode;
+				assembledInstr += entry->opcode;
 				assembledInstr = assembledInstr << 16;
 				
 				// Make sure we have a label.
 				if (sStream.eof()) {
 					std::cerr << "Error: no memory address for type 3/4 instruction." << std::endl;
-					return nullptr;
+					return -1;
 				}
 				
 				// Get our label.
@@ -191,7 +199,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				size_t pos = memoryAddressStr.find(",X");
 				if (pos != std::string::npos) {
 					// Set index addressing boolean, and erase last of characters.
-					bool isIndexAddressed = true;
+					isIndexAddressed = true;
 					memoryAddressStr.erase(pos);
 				} 
 				
@@ -199,7 +207,7 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				pos = memoryAddressStr.find(", X");
 				if (pos != std::string::npos) {
 					// Set index addressing boolean, and erase last of characters.
-					bool isIndexAddressed = true;
+					isIndexAddressed = true;
 					memoryAddressStr.erase(pos);
 				} 
 				
@@ -231,21 +239,33 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				} else {
 					// If null, then try to convert to memory address.
 					try {
-						memoryAddress = stoi(memoryAddressStr, 0, 16);
+						int base = 16;
+						if (isImmediate) {
+							base = 10;
+						}
+						memoryAddress = stoi(memoryAddressStr, 0, base);
 					} catch (std::exception except) {
 						// We have an error, so get out of here.
 						std::cerr << "Error: invalid token in label field." << std::endl;
-						return nullptr;
+						return -1;
 					}
 				}
 				
 				// Perform relative addressing using the locctr.
-				uint32_t relativeAddress = memoryAddress - locctr;
+				int32_t relativeAddress;
+				if (isRelative) {
+					relativeAddress = memoryAddress - locctr - byteCount;
+				} else {
+					relativeAddress = memoryAddress;
+				}
+				
+				// Zero out higher bits.
+				relativeAddress = relativeAddress & 0x00000FFF;
 				
 				// If the address is bigger than the allowed amount, then error out as well.
 				if (relativeAddress > 0xFFF) {
 					std::cerr << "Error: Invalid memory address." << std::endl;
-					return nullptr;
+					return -1;
 				} else {
 					// Put the memory address in the instruction.
 					assembledInstr += relativeAddress;
@@ -267,27 +287,19 @@ char * assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symT
 				// Is index addressed.
 				if (isIndexAddressed) {
 					// Add the index bit to the bitmask.
-					bitmask += 0x08;
+					bitmask += 0x8;
 				}
 				// Make it PC relative.
-				bitmask += 0x2;
+				if (isRelative) {
+					bitmask += 0x2;	
+				}
 				// And then push them in.
-				bitmask = bitmask << 10;
+				bitmask = bitmask << 12;
 				assembledInstr += bitmask;
 			}
 		}
-		// Copy into new buffer, while preserving byte order.
-		char * buffer = (char *)malloc(byteCount);
-		char * instrPoint = (char *)&assembledInstr;
-		for (int i = byteCount - 1; i < 0; i--) {
-			#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-				buffer[i] = instrPoint[byteCount - i];
-			#else
-				buffer[i] = instrPoint[i];
-			#endif
-		}
-		// Return assembled instruction.
-		return buffer;
+		// Return the instruction.
+		return assembledInstr;
 	}
 	
 }

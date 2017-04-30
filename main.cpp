@@ -9,6 +9,7 @@
 #include "OPTABLE.h"
 #include "SYMTABLE.h"
 #include "pass1.h"
+#include "pass2.h"
 
 // Function prototypes.
 void printIntro();
@@ -30,18 +31,51 @@ int main(int argc, char *argv[]) {
 			std::ofstream outputFile (argv[2]);
 			// Make sure we are open.
 			if (outputFile.good()) {
-				// Our symtable object.
-				SYMTABLE symTable = SYMTABLE();
-				// Start pass 1.
-				int locctr = 0;
-				if (!pass1(inputFile, outputFile, locctr, symTable)) {
-					// Return error.
+				// Intermediate file path.
+				const char interPath[] = ".jfhekqds-SIC-XE-Assembler-Intermediate";
+				// Open an intermediate file in the current directory.
+				std::ofstream intermediateFile (interPath);
+				// Make sure it is open and exit if not.
+				if (!intermediateFile.good()) {
+					// We have an error, so exit.
+					std::cerr << "Error: error creating intermediate file." << std::endl;
+					perror("Error");
 					return 1;
 				}
-				std::cout << locctr << std::endl;
-				// Start pass 2.
 				
-				// Return 0.
+				// Our symtable object.
+				SYMTABLE symTable = SYMTABLE();
+				
+				// Start pass 1.
+				int locctr = 0;
+				std::cout << "Running Pass 1." << std::endl;
+				if (!pass1(inputFile, intermediateFile, locctr, symTable)) {
+					// Remove temp file and return error.
+					remove(interPath);
+					return 1;
+				}
+				
+				// Open intermediate file as input.
+				std::ifstream inputInterFile(interPath);
+				// Make sure it is open and exit if not.
+				if (!inputInterFile.good()) {
+					// We have an error, so exit.
+					std::cerr << "Error: error creating intermediate file." << std::endl;
+					perror("Error");
+					return 1;
+				}
+				
+				// Start pass 2.
+				std::cout << "Running Pass 2." << std::endl;
+				if (!pass2(inputInterFile, outputFile, locctr, symTable)) {
+					// Remove temp file and return error.
+					remove(interPath);
+					return 1;
+				}
+				
+				// Remove temp file, print done, and return 0.
+				remove(interPath);
+				std::cout << "Done" << std::endl;
 				return 0;
 			} else {
 				// Print an error and exit.

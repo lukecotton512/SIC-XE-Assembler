@@ -5,6 +5,7 @@
 #include "OPTABLE.h"
 #include "OPTABLEStr.h"
 
+#include <iostream>
 #include <fstream>
 #include <sstream>
 
