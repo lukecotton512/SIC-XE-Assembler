@@ -48,8 +48,9 @@ int main(int argc, char *argv[]) {
 				
 				// Start pass 1.
 				int locctr = 0;
+				int startPosition = 0;
 				std::cout << "Running Pass 1." << std::endl;
-				if (!pass1(inputFile, intermediateFile, locctr, symTable)) {
+				if (!pass1(inputFile, intermediateFile, locctr, startPosition, symTable)) {
 					// Remove temp file and return error.
 					remove(interPath);
 					return 1;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[]) {
 				
 				// Start pass 2.
 				std::cout << "Running Pass 2." << std::endl;
-				if (!pass2(inputInterFile, outputFile, locctr, symTable)) {
+				if (!pass2(inputInterFile, outputFile, locctr, startPosition, symTable)) {
 					// Remove temp file and return error.
 					remove(interPath);
 					return 1;

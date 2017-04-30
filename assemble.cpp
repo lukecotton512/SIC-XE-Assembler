@@ -12,15 +12,15 @@
 #include <cstring>
 #include <unistd.h>
 
-// Macro for swapping byte order.
-#define BYTESWAP(x) ((x >> 24) & 0xFF) || ((x << 8) & 0xFF0000) || ((x >> 8) & 0xFF00) || ((x << 24) & 0xFF000000)
-
 // Assemble function.
-uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &symTable) {
+uint32_t assemble(std::string instrStr, int &byteCount, int locctr, bool isBaseRelative, bool &needsModificationRecord, int baseRelativePosition, SYMTABLE &symTable) {
 	// Split into multiple parts.
 	std::istringstream sStream(instrStr);
 	std::string mmemonic;
 	std::getline(sStream, mmemonic, ' ');
+	
+	// Set needs modification record to false first.
+	needsModificationRecord = false;
 	
 	// Check first character and check for plus sign.
 	// If so, we have an extended mode instruction.
@@ -36,7 +36,6 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 	// If the entry is null, we have an error, so get out of here.
 	if (entry == nullptr) {
 		std::cerr << "Error: invalid instruction mmemonic." << std::endl;
-		exit(EXIT_FAILURE);
 		return -1;
 	} else {
 		// Buffer for instruction.
@@ -79,9 +78,9 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 				std::cerr << "Error: Invalid register!" << std::endl;
 				return -1;
 			}
+			// If we don't have the second register, then assume we don't need a second register.
 			if (reg2Val == -1) {
-				std::cerr << "Error: invalid register!" << std::endl;
-				return -1;
+				reg2Val = 0;
 			}
 			
 			// Put opcode in assembledInstr and shift by 8 bytes.
@@ -102,7 +101,7 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 				assembledInstr = assembledInstr << 24;
 				
 				// Make sure we have a label.
-				if (sStream.eof()) {
+				if (sStream.eof() && mmemonic != "RSUB") {
 					std::cerr << "Error: no memory address for type 3/4 instruction." << std::endl;
 					return -1;
 				}
@@ -150,7 +149,10 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 				// Get the address.
 				uint32_t memoryAddress;
 				if (symTabEntry != nullptr) {
+					// Get the memory address for the symbol.
 					memoryAddress = symTabEntry->getAddress();
+					// Also, set the modification record boolean value to true.
+					needsModificationRecord = true;
 				} else {
 					// If null, then try to convert to memory address.
 					try {
@@ -158,11 +160,16 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 						if (isImmediate) {
 							base = 10;
 						}
-						memoryAddress = stoi(memoryAddressStr, 0, 16);
+						memoryAddress = stoi(memoryAddressStr, 0, base);
 					} catch (std::exception except) {
-						// We have an error, so get out of here.
-						std::cerr << "Error: invalid token in label field." << std::endl;
-						return -1;
+						// If we are not RSUB.
+						if (mmemonic != "RSUB") {
+							// We have an error, so get out of here.
+							std::cerr << "Error: invalid token in label field." << std::endl;
+							return -1;
+						} else {
+							memoryAddress = 0x00000000;
+						}
 					}
 				}
 				
@@ -185,7 +192,7 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 				assembledInstr = assembledInstr << 16;
 				
 				// Make sure we have a label.
-				if (sStream.eof()) {
+				if (sStream.eof() && mmemonic != "RSUB") {
 					std::cerr << "Error: no memory address for type 3/4 instruction." << std::endl;
 					return -1;
 				}
@@ -245,16 +252,28 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 						}
 						memoryAddress = stoi(memoryAddressStr, 0, base);
 					} catch (std::exception except) {
-						// We have an error, so get out of here.
-						std::cerr << "Error: invalid token in label field." << std::endl;
-						return -1;
+						// If we are not RSUB.
+						if (mmemonic != "RSUB") {
+							// We have an error, so get out of here.
+							std::cerr << "Error: invalid token in label field." << std::endl;
+							return -1;
+						} else {
+							memoryAddress = 0x00000000;
+						}
 					}
 				}
 				
 				// Perform relative addressing using the locctr.
 				int32_t relativeAddress;
 				if (isRelative) {
-					relativeAddress = memoryAddress - locctr - byteCount;
+					// Check for base relativity.
+					if (isBaseRelative) {
+						// We are base relative.
+						relativeAddress = memoryAddress - baseRelativePosition;
+					} else {
+						// We are not base relative.
+						relativeAddress = memoryAddress - locctr - byteCount;
+					}
 				} else {
 					relativeAddress = memoryAddress;
 				}
@@ -289,9 +308,13 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, SYMTABLE &sy
 					// Add the index bit to the bitmask.
 					bitmask += 0x8;
 				}
-				// Make it PC relative.
+				// Make it PC relative or base relative.
 				if (isRelative) {
-					bitmask += 0x2;	
+					if (isBaseRelative) {
+						bitmask += 0x4;
+					} else {
+						bitmask += 0x2;	
+					}
 				}
 				// And then push them in.
 				bitmask = bitmask << 12;

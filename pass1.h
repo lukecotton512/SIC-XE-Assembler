@@ -10,6 +10,6 @@
 #include "SYMTABLE.h"
 
 // Pass 1 function.
-bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr, SYMTABLE &symtable);
+bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr, int &startExecution, SYMTABLE &symtable);
 
 #endif

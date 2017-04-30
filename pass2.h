@@ -9,7 +9,7 @@
 #include "SYMTABLE.h"
 
 // Pass 2 function.
-bool pass2(std::ifstream &inputFile, std::ofstream &outputFile, size_t sizeOfProgram, SYMTABLE &symTable);
+bool pass2(std::ifstream &inputFile, std::ofstream &outputFile, size_t sizeOfProgram, int &firstAddress, SYMTABLE &symTable);
 
 // Function to write text record to file.
 void writeTextRecord(std::ofstream &outputFile, std::ostringstream &outputStream, size_t size, int locctr);

@@ -10,9 +10,12 @@
 #include "OPTABLE.h"
 
 // Pass 1 function.
-bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr, SYMTABLE &symtable) {
+bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr, int &startExecution, SYMTABLE &symtable) {
 	// Initalize locctr to 0 for now.
 	locctr = 0;
+	
+	// Where we want to start execution.
+	startExecution = 0;
 	
 	// Check for the copy start statement.
 	// Get a line from the stream.
@@ -22,12 +25,39 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 	// Whether or not we found a start statement or not.
 	bool startStatement = false;
 	
+	// Find any tabs in the line and replace them.
+	for (int i = 0; i < line.size(); i++) {
+		if (line[i] == '\t') {
+			// Replace the character.
+			line[i] = ' ';
+		}
+	}
+	
+	// Find any '\r' characters in the file and replace them with spaces.
+	for (int i = 0; i < line.size(); i++) {
+		if (line[i] == '\r') {
+			// Replace the character.
+			line[i] = ' ';
+		}
+	}
+	
+	// Strip any comments out of the line.
+	size_t posOfDot = line.find(".");
+	if (posOfDot != std::string::npos) {
+		// Get rid of the rest of the line.
+		line.erase(posOfDot, line.size() - posOfDot);
+		// If the last character is a space, then get rid of it.
+		if (line[line.size()-1] == ' ') {
+			line.erase(line.size() - 1, 1);
+		}
+	}
+		
 	// Split the stream by spaces using a string stream.
 	std::istringstream lineStream (line);
 	while (!lineStream.eof()) {
 		// Get a part of the line.
 		std::string lineInString;
-		std::getline(lineStream, lineInString);
+		std::getline(lineStream, lineInString, ' ');
 		
 		// Check to see if we have the string we want.
 		if (lineInString == "START") {
@@ -45,6 +75,8 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 			}
 			// We found it, so set startStatement to true.
 			startStatement = true;
+			// Set start position to locctr.
+			startExecution = locctr;
 			// End the line in the output file.
 			outputStream << line << std::endl;
 			// Get out of here.
@@ -170,8 +202,12 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 					} else if (lineInString == "BYTE") {
 						// If the value starts with "C'".
 						size_t pos = line.find("C'");
+						size_t oneBytePos = line.find("X'");
 						if (pos != std::string::npos) {
-							while (line[pos] == '\'') {
+							// Increment pos by 1.
+							pos += 2;
+							// Look for how much we have with the string constant.
+							while (line[pos] != '\'') {
 								// If we are bigger than the size of the string, then return error.
 								if (pos > line.size()) {
 									// Print error and return.
@@ -183,7 +219,36 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 								// Add 1 to pos.
 								pos++;
 							}
+						} else if (oneBytePos != std::string::npos) {
+							// Add 1 to the location counter for one byte.
+							locctr += 1;
 						}
+					} else if (lineInString == "BASE" || lineInString == "NOBASE") {
+						// We are a base statement, so ignore.
+					} else if (lineInString == "END") {
+						// We are an end statement, so get the address of the first executable place.
+						
+						// Check for an existing label.
+						int val = 0;
+						std::string valStr;
+						std::getline(lineStream, valStr, ' ');
+						// See if the entry is in the symtable.
+						Symbol * symbol = symtable.getSymbol(valStr);
+						if (symbol != nullptr) {
+							// Assign to address from symtable.
+							val = symbol->getAddress();
+						} else {
+							// Try to convert it.
+							try {
+								val = stoi(valStr, 0, 16);
+							} catch (std::exception except) {
+								// Print an error and exit.
+								std::cerr << "Error: invalid token in END statement." << std::endl;
+								return false;
+							}
+						}
+						// Set start location to value.
+						startExecution = val;
 					} else if (i == 0) {
 						// If this is the first line, then we probably have a symbol.
 						// Get the symbol and enter it in.
@@ -202,6 +267,11 @@ bool pass1(std::ifstream &inputStream, std::ofstream &outputStream, int &locctr,
 		while (lineCopy[0] == ' ') {
 			// Delete the character.
 			lineCopy.erase(0,1);
+		}
+		// Get rid of any spaces at the end too.
+		while (lineCopy[lineCopy.size() - 1] == ' ') {
+			// Delete the character.
+			lineCopy.erase(lineCopy.size() - 1,1);
 		}
 		// End the line in the output file.
 		outputStream << lineCopy << std::endl;
