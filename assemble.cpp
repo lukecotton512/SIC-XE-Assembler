@@ -128,6 +128,23 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, bool isBaseR
 					memoryAddressStr.erase(0,1);
 				}
 				
+				// Make sure we are not index addressed.
+				bool isIndexAddressed = false;
+				size_t pos = memoryAddressStr.find(",X");
+				if (pos != std::string::npos) {
+					// Set index addressing boolean, and erase last of characters.
+					isIndexAddressed = true;
+					memoryAddressStr.erase(pos);
+				} 
+				
+				// Try with space.
+				pos = memoryAddressStr.find(", X");
+				if (pos != std::string::npos) {
+					// Set index addressing boolean, and erase last of characters.
+					isIndexAddressed = true;
+					memoryAddressStr.erase(pos);
+				} 
+				
 				// Now, set the control bits to their proper values.
 				// And then push them in.
 				uint32_t bitmask = 0x00000001;
@@ -141,6 +158,13 @@ uint32_t assemble(std::string instrStr, int &byteCount, int locctr, bool isBaseR
 					// Add 1 to the bitmask.
 					bitmask += 0x10;
 				}
+				// Is index addressed.
+				if (isIndexAddressed) {
+					// Add the index bit to the bitmask.
+					bitmask += 0x8;
+				}
+				
+				// Push in bitmask.
 				bitmask = bitmask << 20;
 				assembledInstr += bitmask;
 				
