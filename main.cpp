@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
 					// We have an error, so exit.
 					std::cerr << "Error: error creating intermediate file." << std::endl;
 					perror("Error");
+					deleteOpTable();
 					return 1;
 				}
 				
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]) {
 				if (!pass1(inputFile, intermediateFile, locctr, startPosition, symTable)) {
 					// Remove temp file and return error.
 					remove(interPath);
+					deleteOpTable();
 					return 1;
 				}
 				
@@ -63,6 +65,7 @@ int main(int argc, char *argv[]) {
 					// We have an error, so exit.
 					std::cerr << "Error: error creating intermediate file." << std::endl;
 					perror("Error");
+					deleteOpTable();
 					return 1;
 				}
 				
@@ -71,23 +74,27 @@ int main(int argc, char *argv[]) {
 				if (!pass2(inputInterFile, outputFile, locctr, startPosition, symTable)) {
 					// Remove temp file and return error.
 					remove(interPath);
+					deleteOpTable();
 					return 1;
 				}
 				
 				// Remove temp file, print done, and return 0.
 				remove(interPath);
+				deleteOpTable();
 				std::cout << "Done" << std::endl;
 				return 0;
 			} else {
 				// Print an error and exit.
 				std::cerr << "Error: error opening file." << std::endl;
 				perror("Error");
+				deleteOpTable();
 				return 1;
 			}
 		} else {
 			// Print an error and exit.
 			std::cerr << "Error: error opening file." << std::endl;
 			perror("Error");
+			deleteOpTable();
 			return 1;
 		}
 	} else {

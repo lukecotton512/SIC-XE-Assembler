@@ -24,4 +24,7 @@ void constructOpTable();
 // Looks up a entry by the mmenonic.
 OpTableEntry * lookupEntryInOpTable(std::string mmenonic);
 
+// Gets rid of the OPTABLE once we are done.
+void deleteOpTable();
+
 #endif

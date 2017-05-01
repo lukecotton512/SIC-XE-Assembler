@@ -54,7 +54,7 @@ void constructOpTable() {
 // Lookup entry by mmenonic.
 OpTableEntry * lookupEntryInOpTable(std::string mmenonic) {
 	// Loop through the whole optable and find the instruction.
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 255; i++) {
 		// Get an entry and check it, and return if we have it.
 		OpTableEntry *entry = &OPTABLE[i];
 		if (entry->instrStr == mmenonic) {
