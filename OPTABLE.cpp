@@ -13,6 +13,9 @@
 
 // Constructs our OPTABLE.
 void constructOpTable() {
+	// Create a new OPTABLE.
+	OPTABLE = new OpTableEntry[255];
+	
 	// Break the string up into each line.
 	std::string optableStr = OPTABLEStr;
 	std::istringstream sStream (optableStr);
@@ -60,4 +63,10 @@ OpTableEntry * lookupEntryInOpTable(std::string mmenonic) {
 	}
 	// If we've gotten here, then we don't have a corresponding instruction, so return NULL.
 	return nullptr;
+}
+
+// Gets rid of the OPTABLE once we are done.
+void deleteOpTable() {
+	// Delete the OPTABLE.
+	delete[] OPTABLE;
 }
